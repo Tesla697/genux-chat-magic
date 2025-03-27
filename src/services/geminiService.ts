@@ -22,7 +22,7 @@ export interface GeminiResponse {
 
 export const sendMessageToGemini = async (
   messages: ChatMessage[],
-  temperature: number = a1
+  temperature: number = 1.0
 ): Promise<string> => {
   try {
     // Format the messages in the structure expected by Gemini API
