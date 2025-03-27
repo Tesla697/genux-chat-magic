@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Brain, ChevronDown, ChevronUp, Flask } from "lucide-react";
+import { Brain, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -29,7 +29,7 @@ const ThinkingProcess: React.FC<ThinkingProcessProps> = ({ thinking }) => {
             <span className="font-medium">Thoughts</span>
             <span className="text-xs text-gray-400">*The thoughts produced by the model are experimental</span>
           </div>
-          <Flask size={18} />
+          <Brain size={18} />
         </div>
         
         {/* Content section */}
