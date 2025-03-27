@@ -30,7 +30,7 @@ const ChatContainer: React.FC = () => {
           ))
         )}
         
-        {/* Show real-time thinking before the final response */}
+        {/* Show real-time thinking with new ThinkingProcess component */}
         {thinking && (
           <ThinkingProcess thinking={thinking} />
         )}

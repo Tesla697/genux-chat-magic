@@ -68,13 +68,34 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         content,
       });
 
-      // Start the thinking process with initial content
+      // Start the thinking process with a more structured format
       const thinkingProcess = `
-1. Analyzing the query: "${content}"
-2. Searching knowledge base for relevant information
-3. Considering multiple possible responses
-4. Formulating a coherent and helpful answer
-5. Checking for accuracy and completeness
+Here's a thinking process for addressing the query: "${content}"
+
+1. **Understand the Query**
+   - The user is asking: "${content}"
+   - Need to determine what type of information is being requested
+   - Identify key terms and concepts in the query
+
+2. **Search Knowledge Base**
+   - Looking for relevant information in my training data
+   - Considering multiple angles to approach this question
+   - Finding connections between concepts mentioned in the query
+
+3. **Generate Possible Solutions**
+   - Considering several approaches to answering this question
+   - Weighing different perspectives and interpretations
+   - Prioritizing the most relevant and accurate information
+
+4. **Structure the Response**
+   - Planning how to present information clearly and logically
+   - Organizing key points in a user-friendly format
+   - Ensuring the answer directly addresses the user's needs
+
+5. **Verify Information**
+   - Checking for accuracy and completeness
+   - Ensuring I'm providing well-supported information
+   - Looking for any gaps or inconsistencies that need to be addressed
       `.trim();
       
       setThinking(thinkingProcess);
