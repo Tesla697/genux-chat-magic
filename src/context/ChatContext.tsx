@@ -6,6 +6,7 @@ export interface ChatMessage {
   id: string;
   role: "user" | "model";
   content: string;
+  thinking?: string; // Added thinking content
   timestamp: Date;
 }
 
@@ -65,6 +66,15 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         content,
       });
 
+      // Mock thinking process - in a real app, this would come from the API
+      const thinkingProcess = `
+1. Analyzing the query: "${content}"
+2. Searching knowledge base for relevant information
+3. Considering multiple possible responses
+4. Formulating a coherent and helpful answer
+5. Checking for accuracy and completeness
+      `.trim();
+
       // Get response from Gemini
       const response = await sendMessageToGemini(messageHistory);
 
@@ -73,6 +83,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         id: generateMessageId(),
         role: "model",
         content: response,
+        thinking: thinkingProcess, // Add the thinking process
         timestamp: new Date(),
       };
 
