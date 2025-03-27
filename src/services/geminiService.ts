@@ -1,79 +1,63 @@
 
-// This service handles communication with the Gemini API using fetch
-// instead of the Node.js @google/generative-ai package
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
+// Use the same API key as before
 const API_KEY = "AIzaSyA5j-eAJWbA6zsHnBgUiMXlFsXiH_BDeXs";
-const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-exp-03-25:generateContent";
 
 export interface ChatMessage {
   role: "user" | "model";
   content: string;
 }
 
-export interface GeminiResponse {
-  candidates: {
-    content: {
-      parts: {
-        text: string;
-      }[];
-    };
-  }[];
-}
+// Initialize the Google Generative AI client
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+// Get the generative model
+const model = genAI.getGenerativeModel({
+  model: "gemini-2.5-pro-exp-03-25",
+});
+
+// Configuration for generation
+const generationConfig = {
+  temperature: 1.0,
+  topP: 0.95,
+  topK: 64,
+  maxOutputTokens: 8192,
+};
 
 export const sendMessageToGemini = async (
   messages: ChatMessage[],
   temperature: number = 1.0
 ): Promise<string> => {
   try {
-    // Format the messages in the structure expected by Gemini API
-    const formattedMessages = messages.map(msg => ({
-      role: msg.role,
-      parts: [{ text: msg.content }]
-    }));
-
-    // Create the request payload
-    const requestBody = {
-      contents: formattedMessages,
+    // Start a chat session
+    const chatSession = model.startChat({
       generationConfig: {
-        temperature,
-        topP: 0.95,
-        topK: 64,
-        maxOutputTokens: 8192,
-      }
-    };
-
-    // Add a small delay to simulate the AI thinking (for demo purposes)
-    // In a production app, we would stream the response
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Send the request to the Gemini API
-    const response = await fetch(`${API_URL}?key=${API_KEY}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+        ...generationConfig,
+        temperature: temperature,
       },
-      body: JSON.stringify(requestBody),
+      history: formatMessagesForHistory(messages.slice(0, -1)), // All previous messages except the latest one
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Gemini API error:", errorData);
-      throw new Error(`Gemini API error: ${errorData.error?.message || "Unknown error"}`);
-    }
+    // Add a small delay to simulate the AI thinking (for demo purposes)
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    const data: GeminiResponse = await response.json();
+    // Send the latest message
+    const latestMessage = messages[messages.length - 1];
+    const result = await chatSession.sendMessage(latestMessage.content);
     
-    // Extract the text response from the first candidate
-    if (data.candidates && data.candidates.length > 0) {
-      const candidate = data.candidates[0];
-      if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-        return candidate.content.parts[0].text || "";
-      }
-    }
-    
-    return "No response generated.";
+    // Get the response text
+    return result.response.text();
   } catch (error) {
     console.error("Error sending message to Gemini:", error);
     throw error;
   }
 };
+
+// Helper function to format messages for chat history
+function formatMessagesForHistory(messages: ChatMessage[]) {
+  return messages.map(msg => ({
+    role: msg.role === "model" ? "model" : "user",
+    parts: [{ text: msg.content }],
+  }));
+}
