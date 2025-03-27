@@ -1,15 +1,25 @@
 
-import React from "react";
+import React, { useState, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChatProvider } from "../context/ChatContext";
+import { ChatProvider, useChat } from "../context/ChatContext";
 import ChatHeader from "../components/Chat/ChatHeader";
 import ChatInput from "../components/Chat/ChatInput";
 import ChatMessage from "../components/Chat/ChatMessage";
 import ThinkingProcess from "../components/Chat/ThinkingProcess";
-import { useChat } from "../context/ChatContext";
+import { Button } from "@/components/ui/button";
+import { Plus, Menu, X, Edit, Trash2, Copy } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import ConversationSidebar from "../components/Chat/ConversationSidebar";
 
 const ChatContainer: React.FC = () => {
   const { messages, isLoading, thinking } = useChat();
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom whenever messages change
+  React.useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, thinking]);
 
   return (
     <div className="flex flex-col h-full">
@@ -30,7 +40,7 @@ const ChatContainer: React.FC = () => {
           ))
         )}
         
-        {/* Show real-time thinking with new ThinkingProcess component */}
+        {/* Show real-time thinking with ThinkingProcess component */}
         {thinking && (
           <ThinkingProcess thinking={thinking} />
         )}
@@ -46,6 +56,9 @@ const ChatContainer: React.FC = () => {
             </div>
           </div>
         )}
+        
+        {/* Invisible element for auto-scrolling */}
+        <div ref={chatEndRef} />
       </ScrollArea>
       <ChatInput />
     </div>
@@ -53,12 +66,36 @@ const ChatContainer: React.FC = () => {
 };
 
 const Index: React.FC = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   return (
     <ChatProvider>
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto h-screen max-w-3xl p-0 overflow-hidden">
-          <div className="h-full rounded-lg border shadow-lg overflow-hidden">
-            <ChatContainer />
+        <div className="relative h-screen overflow-hidden">
+          {/* Main chat container with sidebar toggle */}
+          <div className="flex h-screen">
+            {/* Sidebar for conversation history */}
+            <ConversationSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            
+            {/* Main chat area */}
+            <div className={`transition-all duration-300 ease-in-out flex-1 h-screen ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+              <div className="h-full rounded-lg border shadow-lg overflow-hidden relative">
+                {/* Sidebar toggle button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute top-4 left-4 z-10"
+                  onClick={toggleSidebar}
+                >
+                  <Menu size={20} />
+                </Button>
+                <ChatContainer />
+              </div>
+            </div>
           </div>
         </div>
       </div>

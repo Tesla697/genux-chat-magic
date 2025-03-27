@@ -5,7 +5,9 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain } from "lucide-react";
+import { Brain, Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 interface ChatMessageProps {
   message: MessageType;
@@ -14,23 +16,63 @@ interface ChatMessageProps {
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === "user";
   const [activeTab, setActiveTab] = useState<string>("message");
+  const [copied, setCopied] = useState(false);
 
   // Only show tabs for AI messages that have thinking content
   const showTabs = !isUser && message.thinking;
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopied(true);
+        toast({
+          title: "Copied to clipboard",
+          description: "Message content copied to clipboard",
+        });
+        
+        // Reset the copied state after 2 seconds
+        setTimeout(() => {
+          setCopied(false);
+        }, 2000);
+      })
+      .catch(err => {
+        console.error("Failed to copy text: ", err);
+        toast({
+          title: "Copy failed",
+          description: "Failed to copy text to clipboard",
+          variant: "destructive",
+        });
+      });
+  };
+
+  // Copy code block content
+  const copyCodeBlock = (code: string) => {
+    copyToClipboard(code);
+  };
 
   return (
     <div
       className={`flex ${
         isUser ? "justify-end" : "justify-start"
-      } mb-4`}
+      } mb-4 group`}
     >
       <div
-        className={`max-w-[80%] rounded-lg px-4 py-2 ${
+        className={`relative max-w-[80%] rounded-lg px-4 py-2 ${
           isUser
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-muted-foreground"
         }`}
       >
+        {/* Copy button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={() => copyToClipboard(message.content)}
+        >
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+        </Button>
+
         {showTabs ? (
           <Tabs 
             value={activeTab} 
@@ -49,17 +91,29 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 components={{
                   code({ node, className, children, ...props }) {
                     const match = /language-(\w+)/.exec(className || "");
+                    const codeContent = String(children).replace(/\n$/, "");
+                    
                     return !className?.includes('inline') && match ? (
-                      <SyntaxHighlighter
-                        language={match[1]}
-                        style={vscDarkPlus}
-                        PreTag="div"
-                        className="rounded-md my-2"
-                        customStyle={{ borderRadius: '0.375rem' }}
-                        {...props}
-                      >
-                        {String(children).replace(/\n$/, "")}
-                      </SyntaxHighlighter>
+                      <div className="relative group/code">
+                        <SyntaxHighlighter
+                          language={match[1]}
+                          style={vscDarkPlus}
+                          PreTag="div"
+                          className="rounded-md my-2"
+                          customStyle={{ borderRadius: '0.375rem' }}
+                          {...props}
+                        >
+                          {codeContent}
+                        </SyntaxHighlighter>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover/code:opacity-100 transition-opacity bg-background/50"
+                          onClick={() => copyCodeBlock(codeContent)}
+                        >
+                          <Copy size={12} />
+                        </Button>
+                      </div>
                     ) : (
                       <code
                         className={`${className} bg-black/10 dark:bg-white/10 rounded-md px-1`}
@@ -80,17 +134,29 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                   components={{
                     code({ node, className, children, ...props }) {
                       const match = /language-(\w+)/.exec(className || "");
+                      const codeContent = String(children).replace(/\n$/, "");
+                      
                       return !className?.includes('inline') && match ? (
-                        <SyntaxHighlighter
-                          language={match[1]}
-                          style={vscDarkPlus}
-                          PreTag="div"
-                          className="rounded-md my-2"
-                          customStyle={{ borderRadius: '0.375rem' }}
-                          {...props}
-                        >
-                          {String(children).replace(/\n$/, "")}
-                        </SyntaxHighlighter>
+                        <div className="relative group/code">
+                          <SyntaxHighlighter
+                            language={match[1]}
+                            style={vscDarkPlus}
+                            PreTag="div"
+                            className="rounded-md my-2"
+                            customStyle={{ borderRadius: '0.375rem' }}
+                            {...props}
+                          >
+                            {codeContent}
+                          </SyntaxHighlighter>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover/code:opacity-100 transition-opacity bg-background/50"
+                            onClick={() => copyCodeBlock(codeContent)}
+                          >
+                            <Copy size={12} />
+                          </Button>
+                        </div>
                       ) : (
                         <code
                           className={`${className} bg-black/10 dark:bg-white/10 rounded-md px-1`}
@@ -112,17 +178,29 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             components={{
               code({ node, className, children, ...props }) {
                 const match = /language-(\w+)/.exec(className || "");
+                const codeContent = String(children).replace(/\n$/, "");
+                
                 return !className?.includes('inline') && match ? (
-                  <SyntaxHighlighter
-                    language={match[1]}
-                    style={vscDarkPlus}
-                    PreTag="div"
-                    className="rounded-md my-2"
-                    customStyle={{ borderRadius: '0.375rem' }}
-                    {...props}
-                  >
-                    {String(children).replace(/\n$/, "")}
-                  </SyntaxHighlighter>
+                  <div className="relative group/code">
+                    <SyntaxHighlighter
+                      language={match[1]}
+                      style={vscDarkPlus}
+                      PreTag="div"
+                      className="rounded-md my-2"
+                      customStyle={{ borderRadius: '0.375rem' }}
+                      {...props}
+                    >
+                      {codeContent}
+                    </SyntaxHighlighter>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover/code:opacity-100 transition-opacity bg-background/50"
+                      onClick={() => copyCodeBlock(codeContent)}
+                    >
+                      <Copy size={12} />
+                    </Button>
+                  </div>
                 ) : (
                   <code
                     className={`${className} bg-black/10 dark:bg-white/10 rounded-md px-1`}

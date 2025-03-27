@@ -1,21 +1,35 @@
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { sendMessageToGemini } from "../services/geminiService";
 
 export interface ChatMessage {
   id: string;
   role: "user" | "model";
   content: string;
-  thinking?: string; // Added thinking content
+  thinking?: string;
   timestamp: Date;
 }
 
+export interface Conversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface ChatContextProps {
+  conversations: Conversation[];
+  currentConversation: Conversation | null;
   messages: ChatMessage[];
   isLoading: boolean;
-  thinking: string | null; // Added thinking state
+  thinking: string | null;
   sendMessage: (content: string) => Promise<void>;
   clearChat: () => void;
+  createNewConversation: () => void;
+  switchConversation: (id: string) => void;
+  deleteConversation: (id: string) => void;
+  updateConversationTitle: (id: string, title: string) => void;
 }
 
 const ChatContext = createContext<ChatContextProps | undefined>(undefined);
@@ -32,17 +46,69 @@ interface ChatProviderProps {
   children: ReactNode;
 }
 
+// Generate a random ID
+const generateId = (): string => {
+  return Math.random().toString(36).substring(2, 9);
+};
+
+// Create a new empty conversation
+const createEmptyConversation = (): Conversation => {
+  const now = new Date();
+  return {
+    id: generateId(),
+    title: "New Chat",
+    messages: [],
+    createdAt: now,
+    updatedAt: now,
+  };
+};
+
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>(() => {
+    // Try to load conversations from localStorage
+    const savedConversations = localStorage.getItem("conversations");
+    if (savedConversations) {
+      try {
+        // Parse dates from the stored JSON
+        const parsed = JSON.parse(savedConversations, (key, value) => {
+          if (key === "timestamp" || key === "createdAt" || key === "updatedAt") {
+            return new Date(value);
+          }
+          return value;
+        });
+        return parsed;
+      } catch (e) {
+        console.error("Failed to parse saved conversations:", e);
+        return [createEmptyConversation()];
+      }
+    }
+    return [createEmptyConversation()];
+  });
+  
+  const [currentConversationId, setCurrentConversationId] = useState<string>(() => {
+    return conversations[0]?.id || "";
+  });
+  
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [thinking, setThinking] = useState<string | null>(null); // New thinking state
+  const [thinking, setThinking] = useState<string | null>(null);
+
+  // Save conversations to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("conversations", JSON.stringify(conversations));
+  }, [conversations]);
+
+  // Get the current conversation based on the currentConversationId
+  const currentConversation = conversations.find(c => c.id === currentConversationId) || null;
+  
+  // Current messages from the active conversation
+  const messages = currentConversation?.messages || [];
 
   const generateMessageId = (): string => {
-    return Math.random().toString(36).substring(2, 9);
+    return generateId();
   };
 
   const sendMessage = async (content: string): Promise<void> => {
-    if (!content.trim()) return;
+    if (!content.trim() || !currentConversation) return;
 
     // Add user message to chat
     const userMessage: ChatMessage = {
@@ -52,23 +118,40 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    // Update the current conversation with the new user message
+    const updatedConversations = conversations.map(conv => {
+      if (conv.id === currentConversationId) {
+        // Update the conversation title based on the first user message if it's still "New Chat"
+        const title = conv.title === "New Chat" && conv.messages.length === 0
+          ? content.slice(0, 30) + (content.length > 30 ? "..." : "")
+          : conv.title;
+          
+        return {
+          ...conv,
+          title,
+          messages: [...conv.messages, userMessage],
+          updatedAt: new Date(),
+        };
+      }
+      return conv;
+    });
+
+    setConversations(updatedConversations);
     setIsLoading(true);
 
     try {
+      // Get current messages including the new one for the API
+      const currentMessages = [
+        ...updatedConversations.find(c => c.id === currentConversationId)!.messages
+      ];
+      
       // Format messages for the API
-      const messageHistory = messages.map(msg => ({
+      const messageHistory = currentMessages.map(msg => ({
         role: msg.role,
         content: msg.content,
       }));
-      
-      // Add the new message
-      messageHistory.push({
-        role: "user",
-        content,
-      });
 
-      // Start the thinking process with a more structured format
+      // Start the thinking process
       const thinkingProcess = `
 Here's a thinking process for addressing the query: "${content}"
 
@@ -108,12 +191,25 @@ Here's a thinking process for addressing the query: "${content}"
         id: generateMessageId(),
         role: "model",
         content: response,
-        thinking: thinkingProcess, // Store the thinking process
+        thinking: thinkingProcess,
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, botMessage]);
-      setThinking(null); // Clear thinking state after response is received
+      // Update conversations with the bot response
+      setConversations(prevConversations => 
+        prevConversations.map(conv => {
+          if (conv.id === currentConversationId) {
+            return {
+              ...conv,
+              messages: [...conv.messages, botMessage],
+              updatedAt: new Date(),
+            };
+          }
+          return conv;
+        })
+      );
+      
+      setThinking(null);
     } catch (error) {
       console.error("Failed to get response:", error);
       
@@ -125,26 +221,99 @@ Here's a thinking process for addressing the query: "${content}"
         timestamp: new Date(),
       };
       
-      setMessages((prev) => [...prev, errorMessage]);
-      setThinking(null); // Clear thinking state on error
+      // Update conversations with the error message
+      setConversations(prevConversations => 
+        prevConversations.map(conv => {
+          if (conv.id === currentConversationId) {
+            return {
+              ...conv,
+              messages: [...conv.messages, errorMessage],
+              updatedAt: new Date(),
+            };
+          }
+          return conv;
+        })
+      );
+      
+      setThinking(null);
     } finally {
       setIsLoading(false);
     }
   };
 
   const clearChat = (): void => {
-    setMessages([]);
+    setConversations(prevConversations => 
+      prevConversations.map(conv => {
+        if (conv.id === currentConversationId) {
+          return {
+            ...conv,
+            messages: [],
+            title: "New Chat",
+            updatedAt: new Date(),
+          };
+        }
+        return conv;
+      })
+    );
     setThinking(null);
+  };
+
+  const createNewConversation = (): void => {
+    const newConversation = createEmptyConversation();
+    setConversations(prev => [...prev, newConversation]);
+    setCurrentConversationId(newConversation.id);
+  };
+
+  const switchConversation = (id: string): void => {
+    if (conversations.some(conv => conv.id === id)) {
+      setCurrentConversationId(id);
+    }
+  };
+
+  const deleteConversation = (id: string): void => {
+    // Don't delete if it's the only conversation
+    if (conversations.length <= 1) {
+      return;
+    }
+
+    const newConversations = conversations.filter(conv => conv.id !== id);
+    setConversations(newConversations);
+    
+    // If we're deleting the current conversation, switch to the first available one
+    if (id === currentConversationId) {
+      setCurrentConversationId(newConversations[0].id);
+    }
+  };
+
+  const updateConversationTitle = (id: string, title: string): void => {
+    setConversations(prevConversations => 
+      prevConversations.map(conv => {
+        if (conv.id === id) {
+          return {
+            ...conv,
+            title: title || "Untitled Chat",
+            updatedAt: new Date(),
+          };
+        }
+        return conv;
+      })
+    );
   };
 
   return (
     <ChatContext.Provider
       value={{
+        conversations,
+        currentConversation,
         messages,
         isLoading,
         thinking,
         sendMessage,
         clearChat,
+        createNewConversation,
+        switchConversation,
+        deleteConversation,
+        updateConversationTitle,
       }}
     >
       {children}
