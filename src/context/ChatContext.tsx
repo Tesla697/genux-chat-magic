@@ -13,6 +13,7 @@ export interface ChatMessage {
 interface ChatContextProps {
   messages: ChatMessage[];
   isLoading: boolean;
+  thinking: string | null; // Added thinking state
   sendMessage: (content: string) => Promise<void>;
   clearChat: () => void;
 }
@@ -34,6 +35,7 @@ interface ChatProviderProps {
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [thinking, setThinking] = useState<string | null>(null); // New thinking state
 
   const generateMessageId = (): string => {
     return Math.random().toString(36).substring(2, 9);
@@ -66,7 +68,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         content,
       });
 
-      // Mock thinking process - in a real app, this would come from the API
+      // Start the thinking process with initial content
       const thinkingProcess = `
 1. Analyzing the query: "${content}"
 2. Searching knowledge base for relevant information
@@ -74,6 +76,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 4. Formulating a coherent and helpful answer
 5. Checking for accuracy and completeness
       `.trim();
+      
+      setThinking(thinkingProcess);
 
       // Get response from Gemini
       const response = await sendMessageToGemini(messageHistory);
@@ -83,11 +87,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         id: generateMessageId(),
         role: "model",
         content: response,
-        thinking: thinkingProcess, // Add the thinking process
+        thinking: thinkingProcess, // Store the thinking process
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, botMessage]);
+      setThinking(null); // Clear thinking state after response is received
     } catch (error) {
       console.error("Failed to get response:", error);
       
@@ -100,6 +105,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       };
       
       setMessages((prev) => [...prev, errorMessage]);
+      setThinking(null); // Clear thinking state on error
     } finally {
       setIsLoading(false);
     }
@@ -107,6 +113,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
   const clearChat = (): void => {
     setMessages([]);
+    setThinking(null);
   };
 
   return (
@@ -114,6 +121,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       value={{
         messages,
         isLoading,
+        thinking,
         sendMessage,
         clearChat,
       }}

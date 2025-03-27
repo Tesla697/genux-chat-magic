@@ -42,6 +42,10 @@ export const sendMessageToGemini = async (
       }
     };
 
+    // Add a small delay to simulate the AI thinking (for demo purposes)
+    // In a production app, we would stream the response
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     // Send the request to the Gemini API
     const response = await fetch(`${API_URL}?key=${API_KEY}`, {
       method: "POST",

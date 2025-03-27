@@ -5,10 +5,11 @@ import { ChatProvider } from "../context/ChatContext";
 import ChatHeader from "../components/Chat/ChatHeader";
 import ChatInput from "../components/Chat/ChatInput";
 import ChatMessage from "../components/Chat/ChatMessage";
+import ThinkingProcess from "../components/Chat/ThinkingProcess";
 import { useChat } from "../context/ChatContext";
 
 const ChatContainer: React.FC = () => {
-  const { messages, isLoading } = useChat();
+  const { messages, isLoading, thinking } = useChat();
 
   return (
     <div className="flex flex-col h-full">
@@ -28,7 +29,13 @@ const ChatContainer: React.FC = () => {
             <ChatMessage key={message.id} message={message} />
           ))
         )}
-        {isLoading && (
+        
+        {/* Show real-time thinking before the final response */}
+        {thinking && (
+          <ThinkingProcess thinking={thinking} />
+        )}
+        
+        {isLoading && !thinking && (
           <div className="flex justify-start mb-4">
             <div className="bg-muted text-muted-foreground max-w-[80%] rounded-lg px-4 py-2">
               <div className="flex space-x-2">
