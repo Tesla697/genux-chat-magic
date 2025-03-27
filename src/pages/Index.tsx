@@ -1,13 +1,61 @@
-// Update this page (the content is just a fallback if you fail to update the page)
 
-const Index = () => {
+import React from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ChatProvider } from "../context/ChatContext";
+import ChatHeader from "../components/Chat/ChatHeader";
+import ChatInput from "../components/Chat/ChatInput";
+import ChatMessage from "../components/Chat/ChatMessage";
+import { useChat } from "../context/ChatContext";
+
+const ChatContainer: React.FC = () => {
+  const { messages, isLoading } = useChat();
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="flex flex-col h-full">
+      <ChatHeader />
+      <ScrollArea className="flex-1 p-4">
+        {messages.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-center p-8">
+            <div className="max-w-md">
+              <h2 className="text-2xl font-bold mb-2">Welcome to Genux!</h2>
+              <p className="text-muted-foreground">
+                Your AI assistant powered by Google's Gemini. Ask me anything, and I'll do my best to help you.
+              </p>
+            </div>
+          </div>
+        ) : (
+          messages.map((message) => (
+            <ChatMessage key={message.id} message={message} />
+          ))
+        )}
+        {isLoading && (
+          <div className="flex justify-start mb-4">
+            <div className="bg-muted text-muted-foreground max-w-[80%] rounded-lg px-4 py-2">
+              <div className="flex space-x-2">
+                <div className="w-2 h-2 rounded-full bg-current animate-bounce" />
+                <div className="w-2 h-2 rounded-full bg-current animate-bounce [animation-delay:0.2s]" />
+                <div className="w-2 h-2 rounded-full bg-current animate-bounce [animation-delay:0.4s]" />
+              </div>
+            </div>
+          </div>
+        )}
+      </ScrollArea>
+      <ChatInput />
     </div>
+  );
+};
+
+const Index: React.FC = () => {
+  return (
+    <ChatProvider>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto h-screen max-w-3xl p-0 overflow-hidden">
+          <div className="h-full rounded-lg border shadow-lg overflow-hidden">
+            <ChatContainer />
+          </div>
+        </div>
+      </div>
+    </ChatProvider>
   );
 };
 
