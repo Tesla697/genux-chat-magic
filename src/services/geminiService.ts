@@ -48,9 +48,16 @@ export const sendMessageToGemini = async (
     
     // Get the response text
     return result.response.text();
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error sending message to Gemini:", error);
-    throw error;
+    
+    // Check for quota exceeded error (429 status code)
+    if (error.status === 429) {
+      return "I apologize, but we've reached the API usage limit. This is common with free API keys. Please try again in a few minutes or consider upgrading to a paid API plan for uninterrupted service.";
+    }
+    
+    // Generic error message for other errors
+    return "Sorry, I encountered an error. Please try again later.";
   }
 };
 
