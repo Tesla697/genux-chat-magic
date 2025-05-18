@@ -1,10 +1,9 @@
-
 import React, { useState } from "react";
 import { Brain, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import 'katex/dist/katex.min.css';
+import "katex/dist/katex.css";
 import { InlineMath, BlockMath } from 'react-katex';
 
 interface ThinkingProcessProps {

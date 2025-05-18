@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { ChatMessage as MessageType } from "../../context/ChatContext";
 import ReactMarkdown from "react-markdown";
@@ -8,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import 'katex/dist/katex.min.css';
+import "katex/dist/katex.css";
 import { InlineMath, BlockMath } from 'react-katex';
 
 interface ChatMessageProps {
