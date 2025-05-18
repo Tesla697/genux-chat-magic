@@ -1,8 +1,8 @@
 
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
-// Use the same API key as before
-const API_KEY = "AIzaSyA5j-eAJWbA6zsHnBgUiMXlFsXiH_BDeXs";
+// Update the API key
+const API_KEY = "AIzaSyD4Qz_dKVfRqyZP5bDc1MlqEMJ4gw9H_WU";
 
 export interface ChatMessage {
   role: "user" | "model";
