@@ -12,9 +12,9 @@ export interface ChatMessage {
 // Initialize the Google Generative AI client
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// Get the generative model
+// Get the generative model - using gemini-1.0-pro which has higher free tier limits
 const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-pro-exp-03-25",
+  model: "gemini-1.0-pro",
 });
 
 // Configuration for generation
@@ -22,7 +22,7 @@ const generationConfig = {
   temperature: 1.0,
   topP: 0.95,
   topK: 64,
-  maxOutputTokens: 8192,
+  maxOutputTokens: 4096, // Reduced from 8192 to stay within free tier limits
 };
 
 export const sendMessageToGemini = async (
