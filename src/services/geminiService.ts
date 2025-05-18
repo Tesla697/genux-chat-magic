@@ -2,7 +2,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 // Update the API key
-const API_KEY = "AIzaSyD4Qz_dKVfRqyZP5bDc1MlqEMJ4gw9H_WU";
+const API_KEY = "AIzaSyCipbHVhZwGgS1kwAwBdHn8fwe1A5G-qnA";
 
 export interface ChatMessage {
   role: "user" | "model";
@@ -12,9 +12,9 @@ export interface ChatMessage {
 // Initialize the Google Generative AI client
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// Get the generative model - using gemini-1.0-pro which has higher free tier limits
+// Get the generative model - using gemini-2.5-flash-preview-04-17
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.0-pro",
+  model: "gemini-2.5-flash-preview-04-17",
 });
 
 // Configuration for generation
