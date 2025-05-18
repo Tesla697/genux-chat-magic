@@ -4,6 +4,8 @@ import { Brain, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
 
 interface ThinkingProcessProps {
   thinking: string;
@@ -14,6 +16,17 @@ const ThinkingProcess: React.FC<ThinkingProcessProps> = ({ thinking }) => {
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  // Process the content to find LaTeX expressions
+  const processContent = (content: string) => {
+    // Replace inline math expressions: $...$
+    let processed = content.replace(/\$([^$\n]+?)\$/g, '::latex::$1::latex::');
+    
+    // Replace block math expressions: $$...$$
+    processed = processed.replace(/\$\$([\s\S]+?)\$\$/g, '::latex-block::$1::latex-block::');
+    
+    return processed;
   };
 
   return (
@@ -59,15 +72,67 @@ const ThinkingProcess: React.FC<ThinkingProcessProps> = ({ thinking }) => {
                     </code>
                   );
                 },
+                p: ({ children, ...props }) => {
+                  if (typeof children === 'string') {
+                    return <p className="my-2" {...props}>{children}</p>;
+                  }
+                  
+                  // Transform the children to handle LaTeX markers
+                  const elements = React.Children.toArray(children).map((child, index) => {
+                    if (typeof child !== 'string') return child;
+                    
+                    const parts = child.split(/(::latex::.*?::latex::)|(::latex-block::.*?::latex-block::)/g)
+                      .filter(Boolean)
+                      .map((part, i) => {
+                        if (part.startsWith('::latex::')) {
+                          const math = part.replace(/^::latex::(.*)::latex::$/, '$1');
+                          return <InlineMath key={`${index}-${i}`} math={math} />;
+                        } else if (part.startsWith('::latex-block::')) {
+                          const math = part.replace(/^::latex-block::(.*)::latex-block::$/, '$1');
+                          return <BlockMath key={`${index}-${i}`} math={math} />;
+                        } else {
+                          return part;
+                        }
+                      });
+                    
+                    return parts;
+                  });
+                  
+                  return <p className="my-2" {...props}>{elements}</p>;
+                },
                 ol: ({ ...props }) => (
                   <ol className="list-decimal pl-6 space-y-3 my-3" {...props} />
                 ),
                 ul: ({ ...props }) => (
                   <ul className="list-disc pl-6 space-y-2" {...props} />
                 ),
-                li: ({ ...props }) => (
-                  <li className="pl-2" {...props} />
-                ),
+                li: ({ children, ...props }) => {
+                  if (typeof children === 'string') {
+                    return <li className="pl-2" {...props}>{children}</li>;
+                  }
+                  
+                  const elements = React.Children.toArray(children).map((child, index) => {
+                    if (typeof child !== 'string') return child;
+                    
+                    const parts = child.split(/(::latex::.*?::latex::)|(::latex-block::.*?::latex-block::)/g)
+                      .filter(Boolean)
+                      .map((part, i) => {
+                        if (part.startsWith('::latex::')) {
+                          const math = part.replace(/^::latex::(.*)::latex::$/, '$1');
+                          return <InlineMath key={`${index}-${i}`} math={math} />;
+                        } else if (part.startsWith('::latex-block::')) {
+                          const math = part.replace(/^::latex-block::(.*)::latex-block::$/, '$1');
+                          return <BlockMath key={`${index}-${i}`} math={math} />;
+                        } else {
+                          return part;
+                        }
+                      });
+                    
+                    return parts;
+                  });
+                  
+                  return <li className="pl-2" {...props}>{elements}</li>;
+                },
                 h1: ({ ...props }) => (
                   <h1 className="text-xl font-bold my-3" {...props} />
                 ),
@@ -77,15 +142,12 @@ const ThinkingProcess: React.FC<ThinkingProcessProps> = ({ thinking }) => {
                 h3: ({ ...props }) => (
                   <h3 className="text-md font-bold my-2" {...props} />
                 ),
-                p: ({ ...props }) => (
-                  <p className="my-2" {...props} />
-                ),
                 strong: ({ ...props }) => (
                   <strong className="font-bold" {...props} />
                 ),
               }}
             >
-              {thinking}
+              {processContent(thinking)}
             </ReactMarkdown>
           </div>
         )}
